@@ -23,23 +23,7 @@ weather_df =
   select(name, id, everything())
 ```
 
-    ## using cached file: C:\Users\xlu12\AppData\Local/R/cache/R/rnoaa/noaa_ghcnd/USW00094728.dly
-
-    ## date created (size, mb): 2024-09-26 10:19:39.017559 (8.668)
-
-    ## file min/max dates: 1869-01-01 / 2024-09-30
-
-    ## using cached file: C:\Users\xlu12\AppData\Local/R/cache/R/rnoaa/noaa_ghcnd/USW00022534.dly
-
-    ## date created (size, mb): 2024-09-26 10:19:49.60742 (3.94)
-
-    ## file min/max dates: 1949-10-01 / 2024-09-30
-
-    ## using cached file: C:\Users\xlu12\AppData\Local/R/cache/R/rnoaa/noaa_ghcnd/USS0023B17S.dly
-
-    ## date created (size, mb): 2024-09-26 10:19:53.198147 (1.038)
-
-    ## file min/max dates: 1999-09-01 / 2024-09-30
+## Labels
 
 Make a scatterplot but fancy this time.
 
@@ -61,7 +45,9 @@ weather_df %>%
 
 ![](Vis_2_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
-Scales – start with `x` and `y`
+## Scales
+
+– start with `x` and `y`
 
 ``` r
 weather_df %>%
@@ -113,7 +99,7 @@ weather_df %>%
   viridis::scale_color_viridis(discrete = TRUE)
 ```
 
-Themes
+## Themes
 
 Themes are used to modify non-data elements of a plot.
 
@@ -188,7 +174,7 @@ ggp_scatterplot +
 
 ![](Vis_2_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
-Learning assessment
+## Learning assessment
 
 ``` r
 weather_df %>% 
@@ -214,6 +200,8 @@ weather_df %>%
     ## (`geom_point()`).
 
 ![](Vis_2_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+## Different `geom_*`
 
 Extra bonus stuff in `ggplot`
 
@@ -319,8 +307,12 @@ scale_fill_discrete = scale_fill_viridis_d
 
 ## Data manipulation
 
+Reorder the factor variables (there are more ways to do it
+automatically…)
+
 ``` r
 weather_df %>% 
+  mutate(name = fct_relevel(name, c("Molokai_HI", "CentralPark_NY", "Waterhole_WA"))) %>% 
   ggplot(aes(x = name, y = tmax, fill = name)) +
   geom_violin(alpha = .5)
 ```
@@ -329,3 +321,82 @@ weather_df %>%
     ## (`stat_ydensity()`).
 
 ![](Vis_2_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
+PULSE data next.
+
+``` r
+pulse_df = 
+  read_sas("data/public_pulse_data.sas7bdat") %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(
+    cols = bdi_score_bl:bdi_score_12m,
+    names_to = "visit",
+    values_to = "bdi_score",
+    names_prefix = "bdi_score_"
+  ) %>% 
+  mutate(visit = ifelse(visit == "bl", "00m", visit))
+
+pulse_df %>% 
+  ggplot(aes(x = visit, y = bdi_score)) +
+  geom_boxplot()
+```
+
+    ## Warning: Removed 879 rows containing non-finite outside the scale range
+    ## (`stat_boxplot()`).
+
+![](Vis_2_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+Make an FAS plot.
+
+``` r
+litters_df = 
+  read_csv("data/FAS_litters.csv", na = c("NA", ".", "")) %>% 
+  janitor::clean_names() %>% 
+  separate(group, into = c("dose", "tx_day"), 3)
+```
+
+    ## Rows: 49 Columns: 8
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (2): Group, Litter Number
+    ## dbl (6): GD0 weight, GD18 weight, GD of Birth, Pups born alive, Pups dead @ ...
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+pups_df = 
+  read_csv("data/FAS_pups.csv", na = c("NA", ".", "")) %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(
+    pd_ears:pd_walk,
+    names_to = "outcome",
+    values_to = "pn_day",
+    names_prefix = "pd_"
+  )
+```
+
+    ## Rows: 313 Columns: 6
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (1): Litter Number
+    ## dbl (5): Sex, PD ears, PD eyes, PD pivot, PD walk
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+fas_df = 
+  left_join(pups_df, litters_df, by = "litter_number")
+
+fas_df %>% 
+  drop_na(tx_day) %>% 
+  ggplot(aes(x = dose, y = pn_day)) +
+  geom_boxplot() +
+  facet_grid(tx_day ~ outcome)
+```
+
+    ## Warning: Removed 42 rows containing non-finite outside the scale range
+    ## (`stat_boxplot()`).
+
+![](Vis_2_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
