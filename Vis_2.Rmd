@@ -1,0 +1,90 @@
+---
+title: "Vis II"
+author: "Jinghan Zhao"
+date: "2024-10-01"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggridges)
+```
+
+Import weather data
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USW00022534", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2021-01-01",
+    date_max = "2022-12-31") |>
+  mutate(
+    name = case_match(
+      id, 
+      "USW00094728" ~ "CentralPark_NY", 
+      "USW00022534" ~ "Molokai_HI",
+      "USS0023B17S" ~ "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) |>
+  select(name, id, everything())
+```
+
+Make a scatterplot but fancy this time.
+
+```{r}
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = .3) +
+  labs(
+    title = "Temperature scatterplot",
+    x = "Minimum Temp (C)",
+    y = "Maximum Temp (C)",
+    color = "Location",
+    caption = "Weather data taken from rnoaa package for three stations."
+  )
+```
+
+Scales -- start with `x` and `y`
+
+```{r}
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = .3) +
+  labs(
+    title = "Temperature scatterplot",
+    x = "Minimum Temp (C)",
+    y = "Maximum Temp (C)",
+    color = "Location",
+    caption = "Weather data taken from rnoaa package for three stations."
+  ) +
+  scale_x_continuous(
+    breaks = c(-15, 0, 20),
+    labels = c("-15C", "0", "20C")
+  ) +
+  scale_y_continuous(
+    limits = c(0, 30),
+    transform = "sqrt"
+  )
+```
+
+Look at color:
+
+Use `viridis` package to choose color scheme
+
+```{r}
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = .3) +
+  labs(
+    title = "Temperature scatterplot",
+    x = "Minimum Temp (C)",
+    y = "Maximum Temp (C)",
+    color = "Location",
+    caption = "Weather data taken from rnoaa package for three stations."
+  ) +
+  viridis::scale_color_viridis(discrete = TRUE)
+```
+
+
+
